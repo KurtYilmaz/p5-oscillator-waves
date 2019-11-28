@@ -13,12 +13,27 @@ let speed = 0.02; // Speed of wave scrolling
 let dropThreshold;
 let dropSpeed = 18; // Speed of saw and square points dropping
 p5.disableFriendlyErrors = true; // Performance optimization
-let currMils = 0;
-let prevMils = 0;
+let animHeight;
+let animWidth;
+let cnv;
+// Variable parentId should be specified in html e.g.:
+// <script>parentId = "home"</script>
+let waveOffset = 0;
+
+function setWindow() {
+  if (typeof parentId != "undefined") {
+    animHeight = document.getElementById(parentId).clientHeight;
+    animWidth = document.getElementById(parentId).clientWidth;
+    cnv = createCanvas(animWidth, animHeight);
+    cnv.parent(parentId);
+  } else {
+    animHeight = windowHeight;
+    animWidth = windowWidth;
+  }
+}
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  dx = TWO_PI * frequency * xSpacing;
+  setWindow();
   initConstants();
   sinValues = new Array(floor(waveWidth / xSpacing));
   squareValues = new Array(floor(waveWidth / xSpacing));
@@ -27,30 +42,17 @@ function setup() {
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-  initConstants();
-  sinValues = new Array(floor(waveWidth / xSpacing));
-  squareValues = new Array(floor(waveWidth / xSpacing));
-  triangleValues = new Array(floor(waveWidth / xSpacing));
-  sawValues = new Array(floor(waveWidth / xSpacing));
+  setup();
 }
 
 function initConstants() {
   waveWidth = width + 16;
-  ySpacing = windowHeight / 4;
-  padding = windowHeight / 20;
-  amplitude = windowHeight / 20;
+  ySpacing = animHeight / 4;
+  padding = animHeight / 20;
+  amplitude = animHeight / 20;
   dropThreshold = 0.97 * PI;
-}
-
-function timerStart() {
-  prevMils = millis();
-}
-
-function timerPrint(id) {
-  currMils = millis() - prevMils;
-  prevMils = currMils;
-  print(currMils * 1000 + "- " + id + "\n");
+  dx = TWO_PI * frequency * xSpacing;
+  waveOffset = animHeight / 30;
 }
 
 function draw() {
@@ -125,10 +127,10 @@ function calcSaw(thetaSaw) {
 }
 
 function renderWaves() {
-  renderSin(padding + amplitude, "#1abc9c");
-  renderSquare(padding + amplitude + ySpacing, "#bc1a7b");
-  renderTriangle(padding + amplitude + 2 * ySpacing, "#bc3a1a");
-  renderSaw(padding + amplitude + 3 * ySpacing, "#bc8b1a");
+  renderSin(padding + amplitude - waveOffset, "#1abc9c");
+  renderSquare(padding + amplitude + ySpacing - waveOffset, "#bc1a7b");
+  renderTriangle(padding + amplitude + 2 * ySpacing + waveOffset, "#bc3a1a");
+  renderSaw(padding + amplitude + 3 * ySpacing + waveOffset, "#bc8b1a");
 }
 
 function renderSin(y, waveColor) {
