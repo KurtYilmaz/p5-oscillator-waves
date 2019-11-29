@@ -1,24 +1,49 @@
-let xSpacing = 16; // Distance between each horizontal location
+let xSpacing; // Distance between each horizontal location
 let ySpacing; // Distance between each wave
 let waveWidth; // Width of entire wave
 let theta = 0; // Start angle at 0
 let amplitude; // Height of wave
-let frequency = 0.0033; // wave frequency
+let frequency; // wave frequency
 let dx; // Value for incrementing x
 let sinValues; // Using an array to store height values for the wave
+let squareValues;
+let triValues;
+let sawValues;
 let padding; // Padding from top
-let renderLines = false; // flag for rendering lines between poitns
-let pointWidth = 8; // Width of the wave ellipses
+let wavePosition; // Position of each wave, modified by ySpacing
+let pointWidth; // Width of the wave ellipses
 let speed = 0.02; // Speed of wave scrolling
-let dropThreshold;
+let dropThreshold; // Distance from changing point to start drop
 let dropSpeed = 18; // Speed of saw and square points dropping
 p5.disableFriendlyErrors = true; // Performance optimization
-let animHeight;
-let animWidth;
-let cnv;
-// Variable parentId should be specified in html e.g.:
-// <script>parentId = "home"</script>
-let waveOffset = 0;
+let animHeight; // Animation height
+let animWidth; // Animation width
+let cnv; // Reference to canvas
+// The following variables should be specified in html e.g:
+/* 
+<script>
+  parentId = "home";
+  colorSin = "#2e7986";
+  colorSquare = "#2e7986";
+  colorTri = "#2e7986";
+  colorSaw = "#2e7986";
+</script> 
+*/
+
+function setColors() {
+  if (typeof colorSin == "undefined") {
+    colorSin = "#1abc9c";
+  }
+  if (typeof colorSquare == "undefined") {
+    colorSquare = "#bc1a7b";
+  }
+  if (typeof colorTri == "undefined") {
+    colorTri = "#bc3a1a";
+  }
+  if (typeof colorSaw == "undefined") {
+    colorSaw = "#bc9b1a";
+  }
+}
 
 function setWindow() {
   if (typeof parentId != "undefined") {
@@ -33,40 +58,45 @@ function setWindow() {
 }
 
 function setup() {
+  setColors();
   setWindow();
-  initConstants();
-  sinValues = new Array(floor(waveWidth / xSpacing));
-  squareValues = new Array(floor(waveWidth / xSpacing));
-  triangleValues = new Array(floor(waveWidth / xSpacing));
-  sawValues = new Array(floor(waveWidth / xSpacing));
+  setConstants();
 }
 
 function windowResized() {
-  setup();
+  setWindow();
+  setConstants();
 }
 
-function initConstants() {
+function setConstants() {
   waveWidth = width + 16;
-  ySpacing = animHeight / 4;
-  padding = animHeight / 20;
-  amplitude = animHeight / 20;
-  dropThreshold = 0.97 * PI;
+  xSpacing = floor(animWidth / 40);
+  ySpacing = floor(animHeight / 5);
+  padding = floor(animHeight / 16);
+  amplitude = floor(animHeight / 20);
+  pointWidth = Math.min(floor(xSpacing * 0.8), amplitude / 3);
+  frequency = 3 / waveWidth;
   dx = TWO_PI * frequency * xSpacing;
-  waveOffset = animHeight / 30;
+  dropThreshold = 0.97 * PI;
+  sawThreshold = 0.15 * amplitude;
+  wavePosition = padding + amplitude;
+  sinValues = new Array(floor(waveWidth / xSpacing));
+  squareValues = new Array(floor(waveWidth / xSpacing));
+  triValues = new Array(floor(waveWidth / xSpacing));
+  sawValues = new Array(floor(waveWidth / xSpacing));
 }
 
 function draw() {
   background("#2c3e50");
   calcSin(theta);
   calcSquare(theta);
-  calcTriangle(theta);
+  calcTri(theta);
   calcSaw(theta);
   renderWaves();
   theta += speed % TWO_PI;
 }
 
 function calcSin(thetaSin) {
-  // For every x value, calculate a y value with sine function
   let x = thetaSin;
   for (let i = 0; i < sinValues.length; i++) {
     sinValues[i] = -(sin(x) * amplitude);
@@ -92,18 +122,18 @@ function calcSquare(thetaSquare) {
   }
 }
 
-function calcTriangle(thetaTriangle) {
-  let x = thetaTriangle % TWO_PI;
+function calcTri(thetaTri) {
+  let x = thetaTri % TWO_PI;
   let slope = (2 * amplitude) / PI;
-  for (let i = 0; i < triangleValues.length; i++) {
+  for (let i = 0; i < triValues.length; i++) {
     if (x < HALF_PI) {
-      triangleValues[i] = -(slope * x);
+      triValues[i] = -(slope * x);
     } else if (x < PI) {
-      triangleValues[i] = slope * x - 2 * amplitude;
+      triValues[i] = slope * x - 2 * amplitude;
     } else if (x < 3 * HALF_PI) {
-      triangleValues[i] = slope * x - 2 * amplitude;
+      triValues[i] = slope * x - 2 * amplitude;
     } else {
-      triangleValues[i] = -(slope * x) + 4 * amplitude;
+      triValues[i] = -(slope * x) + 4 * amplitude;
     }
     x = (x + dx) % TWO_PI;
   }
@@ -115,7 +145,7 @@ function calcSaw(thetaSaw) {
   for (let i = 0; i < sawValues.length; i++) {
     if (x > dropThreshold && x < PI) {
       sawValues[i] += speed * dropSpeed * amplitude;
-      sawValues[i] = Math.min(squareValues[i], amplitude);
+      sawValues[i] = Math.min(sawValues[i], amplitude);
     } else if (x <= PI) {
       sawValues[i] = -(slope * x);
     } else {
@@ -127,78 +157,41 @@ function calcSaw(thetaSaw) {
 }
 
 function renderWaves() {
-  renderSin(padding + amplitude - waveOffset, "#1abc9c");
-  renderSquare(padding + amplitude + ySpacing - waveOffset, "#bc1a7b");
-  renderTriangle(padding + amplitude + 2 * ySpacing + waveOffset, "#bc3a1a");
-  renderSaw(padding + amplitude + 3 * ySpacing + waveOffset, "#bc8b1a");
+  renderSin(wavePosition, colorSin);
+  renderSquare(wavePosition + ySpacing, colorSquare);
+  renderTri(height - wavePosition - ySpacing, colorTri);
+  renderSaw(height - wavePosition, colorSaw);
 }
 
 function renderSin(y, waveColor) {
-  strokeWeight(6);
+  fill(color(waveColor));
+  stroke(color(waveColor));
   // A simple way to draw the wave with an ellipse at each location
   for (let x = 0; x < sinValues.length; x++) {
-    fill(color(waveColor));
-    stroke(color(waveColor));
     ellipse(x * xSpacing, sinValues[x] + y, pointWidth, pointWidth);
-    if (x > 0 && renderLines) {
-      line(
-        (x - 1) * xSpacing,
-        sinValues[x - 1] + y,
-        x * xSpacing,
-        sinValues[x] + y
-      );
-    }
   }
 }
 
 function renderSquare(y, waveColor) {
+  fill(color(waveColor));
+  stroke(color(waveColor));
   for (let x = 0; x < sinValues.length; x++) {
-    fill(color(waveColor));
-    stroke(color(waveColor));
     ellipse(x * xSpacing, squareValues[x] + y, pointWidth, pointWidth);
-    if (x > 0 && renderLines) {
-      if (squareValues[x - 1] == squareValues[x]) {
-        line(
-          (x - 1) * xSpacing,
-          squareValues[x - 1] + y,
-          x * xSpacing,
-          squareValues[x] + y
-        );
-      }
-    }
   }
 }
 
-function renderTriangle(y, waveColor) {
+function renderTri(y, waveColor) {
+  fill(color(waveColor));
+  stroke(color(waveColor));
   for (let x = 0; x < sinValues.length; x++) {
-    fill(color(waveColor));
-    stroke(color(waveColor));
-    ellipse(x * xSpacing, triangleValues[x] + y, pointWidth, pointWidth);
-    if (x > 0 && renderLines) {
-      line(
-        (x - 1) * xSpacing,
-        triangleValues[x - 1] + y,
-        x * xSpacing,
-        triangleValues[x] + y
-      );
-    }
+    ellipse(x * xSpacing, triValues[x] + y, pointWidth, pointWidth);
   }
 }
 
 function renderSaw(y, waveColor) {
+  fill(color(waveColor));
+  stroke(color(waveColor));
   for (let x = 0; x < sinValues.length; x++) {
-    fill(color(waveColor));
-    stroke(color(waveColor));
     ellipse(x * xSpacing, sawValues[x] + y, pointWidth, pointWidth);
-    if (x > 0 && renderLines) {
-      if (abs(sawValues[x - 1] - sawValues[x]) <= amplitude * 0.15) {
-        line(
-          (x - 1) * xSpacing,
-          sawValues[x - 1] + y,
-          x * xSpacing,
-          sawValues[x] + y
-        );
-      }
-    }
   }
 }
