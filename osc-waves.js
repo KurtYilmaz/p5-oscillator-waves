@@ -71,12 +71,12 @@ function windowResized() {
 
 function setConstants() {
   waveWidth = width + 16;
-  xSpacing = floor(animWidth / 40);
+  xSpacing = floor(Math.min(animWidth / 40, 32));
   ySpacing = floor(animHeight / 5);
   padding = floor(animHeight / 16);
   amplitude = floor(animHeight / 20);
   pointWidth = Math.min(floor(xSpacing * 0.8), amplitude / 3);
-  frequency = 3 / waveWidth;
+  frequency = Math.max(3 / waveWidth, .003);
   dx = TWO_PI * frequency * xSpacing;
   dropThreshold = 0.97 * PI;
   sawThreshold = 0.15 * amplitude;
