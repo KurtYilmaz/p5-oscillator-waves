@@ -54,6 +54,7 @@ function setWindow() {
   } else {
     animHeight = windowHeight;
     animWidth = windowWidth;
+    cnv = createCanvas(animWidth, animHeight);
   }
 }
 
